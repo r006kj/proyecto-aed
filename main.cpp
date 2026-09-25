@@ -19,19 +19,36 @@
 
 #include "Shader.h"
 #include "Cube.h"
+#include "Octree.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
+Octree* globalOctree = nullptr;
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        if (globalOctree) {
+            // Genera coordenadas dentro del rango del Octree (0 a 100)
+            int rx = rand() % 101;
+            int ry = rand() % 101;
+            int rz = rand() % 101;
+
+            globalOctree->insert(rx, ry, rz);
+            std::cout << "Punto insertado: (" << rx << ", " << ry << ", " << rz << ")\n";
+        }
+    }
+}
+
 struct OrbitCamera {
-    glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
-    float radius = 3.0f;
+    glm::vec3 target = glm::vec3(50.0f, 50.0f, 50.0f);
+    float radius = 150.0f;
     float azimuth = 0.0f;
     float elevation = M_PI / 2.0f;
     float orbit_speed = 0.005f;
-    float zoom_speed = 0.2f;
-    float pan_speed = 0.002f;
+    float zoom_speed = 5.0f;
+    float pan_speed = 1.0f;
     bool dragging = false;
     double lastX = 0.0f, lastY = 0.0f;
 
@@ -132,14 +149,13 @@ int main() {
 
     Shader mainShader("shader.vs", "shader.fs");
 
-    Cube cuboPrincipal(glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, glm::vec3(0.2f, 0.5f, 0.8f));
+    Cube cuboMolde(glm::vec3(0.0f), 1.0f);
+    Octree octree(0, 0, 0, 100, 100, 100);
+    octree.insert(20, 30, 40);
+    octree.insert(80, 10, 50);
 
-    std::vector<std::unique_ptr<Cube>> subNodos;
-    subNodos.emplace_back(std::make_unique<Cube>(glm::vec3(-0.5f,  0.5f, 0.0f), 0.4f, glm::vec3(1.0f, 1.0f, 0.3f)));
-    subNodos.emplace_back(std::make_unique<Cube>(glm::vec3(0.5f,  0.5f, 0.0f), 0.4f, glm::vec3(1.0f, 1.0f, 0.3f)));
-    subNodos.emplace_back(std::make_unique<Cube>(glm::vec3( 0.5f, -0.5f, 0.0f), 0.4f, glm::vec3(1.0f, 1.0f, 0.3f)));
-    subNodos.emplace_back(std::make_unique<Cube>(glm::vec3( -0.5f, -0.5f, 0.0f), 0.4f, glm::vec3(1.0f, 1.0f, 0.3f)));
-
+    globalOctree = &octree;
+    glfwSetKeyCallback(window, key_callback);
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -153,7 +169,7 @@ int main() {
 
         mainShader.use();
 
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800 / (float)600, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800 / (float)600, 0.1f, 1000.0f);
 
         glm::mat4 view = camera.getViewMatrix();
         mainShader.setMat4("view", glm::value_ptr(view));
@@ -164,11 +180,8 @@ int main() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_DEPTH_TEST);
 
-        cuboPrincipal.draw(mainShader);
+        octree.draw(mainShader, cuboMolde);
 
-        for (const auto& nodo : subNodos) {
-            nodo->draw(mainShader);
-        }
         glEnable(GL_DEPTH_TEST);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

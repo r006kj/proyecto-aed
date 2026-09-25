@@ -28,6 +28,7 @@ public:
 
     glm::vec3 getCenter() const { return center; }
     float getSize() const { return size; }
+    unsigned int getVAO() const { return VAO; }
 };
 
 

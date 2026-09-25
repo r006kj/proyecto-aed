@@ -18,13 +18,18 @@ Cube::~Cube() {
 }
 
 void Cube::setupMesh() {
-    float h = size / 2.0f; // Mitad del tamaño para desplazarnos desde el centro
+    float h = size / 2.0f; // Mitad del tamaño para un cubo unitario
 
-    // Generamos los 8 vértices relativos al centro del cubo
     float vertices[] = {
-        // Solo posiciones (X, Y, Z)
-        -h, -h,  h,   h, -h,  h,   h,  h,  h,  -h,  h,  h, // Frente (0, 1, 2, 3)
-        -h, -h, -h,   h, -h, -h,   h,  h, -h,  -h,  h, -h  // Atrás  (4, 5, 6, 7)
+        // Solo posiciones locales (X, Y, Z) - 3 floats por vértice
+        -h, -h,  h,   // 0
+         h, -h,  h,   // 1
+         h,  h,  h,   // 2
+        -h,  h,  h,   // 3
+        -h, -h, -h,   // 4
+         h, -h, -h,   // 5
+         h,  h, -h,   // 6
+        -h,  h, -h    // 7
     };
 
     unsigned int indices[] = {
@@ -40,17 +45,24 @@ void Cube::setupMesh() {
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
+    // 1. Enlazar el VAO principal
     glBindVertexArray(VAO);
 
+    // 2. Vincular y llenar el VBO de posiciones
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+    // 3. Vincular y llenar el EBO de índices
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+    // 4. CORRECCIÓN DEL STRIDE: Cambiado de 6 a 3 * sizeof(float)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    // 5. DESVINCULAR EXCLUSIVAMENTE EL VAO
+    // ¡Ojo! No debes desvincular el GL_ARRAY_BUFFER ni el EBO antes que el VAO,
+    // o el VAO olvidará de dónde leer los datos de la GPU.
     glBindVertexArray(0);
 }
 

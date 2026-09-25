@@ -7,7 +7,9 @@ add_executable(Proyecto1 main.cpp glad.c
         Shader.h
         Shader.cpp
         Cube.h
-        Cube.cpp)
+        Cube.cpp
+        Octree.h
+        Octree.cpp)
 
 target_link_libraries(Proyecto1 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/libglfw3.a opengl32)
 target_include_directories(Proyecto1 PRIVATE include)
