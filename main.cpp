@@ -27,6 +27,10 @@
 
 Octree* globalOctree = nullptr;
 
+bool modoLlenadoAutomatico = false;
+float tiempoUltimaInsercion = 0.0f;
+float intervaloEjecucion = 0.05f;
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
         if (globalOctree) {
@@ -38,6 +42,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             globalOctree->insert(rx, ry, rz);
             std::cout << "Punto insertado: (" << rx << ", " << ry << ", " << rz << ")\n";
         }
+    }
+
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        modoLlenadoAutomatico = !modoLlenadoAutomatico; // Invierte el estado (Alterna entre Activo/Inactivo)
+        std::cout << "Modo automatico del peor caso: " << (modoLlenadoAutomatico ? "ACTIVADO" : "DESACTIVADO") << "\n";
     }
 }
 
@@ -124,6 +133,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.processScroll(yoffset);
 }
 
+void processInput (GLFWwindow* window) {
+
+}
+
 int main() {
     if (!glfwInit()) return -1;
 
@@ -151,18 +164,37 @@ int main() {
 
     Cube cuboMolde(glm::vec3(0.0f), 1.0f);
     Octree octree(0, 0, 0, 100, 100, 100);
-    octree.insert(20, 30, 40);
-    octree.insert(80, 10, 50);
 
     globalOctree = &octree;
     glfwSetKeyCallback(window, key_callback);
 
     while (!glfwWindowShouldClose(window)) {
+
+        float tiempoActual = (float)glfwGetTime();
+
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.processPan(0.0f,  1.0f);
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.processPan(0.0f,  -1.0f);
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.processPan(1.0f,  0.0f);
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.processPan(-1.0f,  0.0f);
+
+        if (modoLlenadoAutomatico && globalOctree && !globalOctree->isFull()) {
+            if (tiempoActual - tiempoUltimaInsercion >= intervaloEjecucion) {
+
+                int centroX = 50;
+                int centroY = 50;
+                int centroZ = 50;
+
+                int rx = centroX + (rand() % 3 - 1);
+                int ry = centroY + (rand() % 3 - 1);
+                int rz = centroZ + (rand() % 3 - 1);
+
+                globalOctree->insert(rx, ry, rz);
+                std::cout << "[Modo F] Punto critico insertado: (" << rx << ", " << ry << ", " << rz << ")\n";
+
+                tiempoUltimaInsercion = tiempoActual;
+            }
+        }
 
         glClearColor(0.15f, 0.16f, 0.21f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -174,13 +206,16 @@ int main() {
         glm::mat4 view = camera.getViewMatrix();
         mainShader.setMat4("view", glm::value_ptr(view));
 
+        int colorLoc = glGetUniformLocation(mainShader.ID, "objectColor");
+        int modelLoc = glGetUniformLocation(mainShader.ID, "model");
+
         mainShader.setMat4("view", glm::value_ptr(view));
         mainShader.setMat4("projection", glm::value_ptr(projection));
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDisable(GL_DEPTH_TEST);
 
-        octree.draw(mainShader, cuboMolde);
+        octree.draw(colorLoc, modelLoc, cuboMolde);
 
         glEnable(GL_DEPTH_TEST);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

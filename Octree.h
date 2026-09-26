@@ -33,16 +33,20 @@ class Octree {
 
     int level = 0;
 
+    static const int MAX_DEPTH = 9;
+
     public:
     Octree();
     Octree(int x, int y, int z);
-    Octree(int x1, int y1, int z1, int x2, int y2, int z2);
+    Octree(int x1, int y1, int z1, int x2, int y2, int z2, int currentLevel = 0);
 
     void insert(int x, int y, int z);
 
     bool find(int x, int y, int z);
 
-    void draw(const Shader& shader, const Cube& singleCubeMold) const;
+    void draw(int colorLoc, int modelLoc, const Cube &singleCubeMold) const;
+
+    bool isFull() const;
 };
 
 
